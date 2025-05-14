@@ -1,0 +1,112 @@
+import {
+  LoginUser,
+  RegisterUser,
+  VerifyEmail,
+  ResendVerifyEmail,
+} from "./pages/Authentication";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { NotFound } from "./components/rootindex";
+import { ProtectedRoutes } from "./routes/User_Routes/index";
+import MainLayout from "./components/Layouts/Mainlayout/Mainlayout";
+import UserProfile from "./pages/Profile/UserProfile";
+import "./App.css";
+import { CreatedHost, HostProfile } from "./pages/Host/index";
+import EditProfile from "./components/features/HostCard/EditProfile/EditProfile";
+import CreateServices from "./pages/Services/CreateService/CreateServices";
+import CreateRestaurant from "./pages/Restaurants/CreateRestaurants/CreateRestaurants";
+import ServiceProfile from "./pages/Services/ServiceProfile/ServiceProfile";
+import RestaurantProfile from "./pages/Restaurants/RestaurantsProfile/RestaurantProfile";
+import ServiceProtectedRoutes from "./routes/Service_Routes/ServiceProtectedRoutes";
+import CreateRooms from "./pages/Rooms/CreateRooms/CreateRooms";
+import RoomProfile from "./pages/Rooms/RoomProfile/RoomProfile";
+function App() {
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <MainLayout />,
+      children: [
+        {
+          path: "login",
+          element: <LoginUser />,
+        },
+        {
+          path: "register",
+          element: <RegisterUser />,
+        },
+      ],
+    },
+    // Authentication routes outside main layout
+    {
+      path: "/verify-email",
+      element: <VerifyEmail />,
+    },
+    {
+      path: "/resend-verification",
+      element: <ResendVerifyEmail />,
+    },
+    {
+      element: <ProtectedRoutes />, // This wraps all protected children
+      children: [
+        {
+          path: "/dashboard",
+          element: <UserProfile />,
+        },
+        {
+          path: "/create_host",
+          element: <CreatedHost />,
+        },
+        {
+          element: <ServiceProtectedRoutes />, // This wraps service-related routes
+          children: [
+            {
+              path: "/create_service",
+              element: <CreateServices />,
+            },
+            {
+              path: "/create_restaurant",
+              element: <CreateRestaurant />,
+            },
+            //for accomodation types like hotels lodges luxury villas and home stays we are using the same component
+            {
+              path: "/create_rooms",
+              element: <CreateRooms />,
+            },
+            // Add other service-related routes that require active host status
+          ],
+        },
+        {
+          path: "/host/:hostId/services",
+          element: <ServiceProfile />,
+        },
+        {
+          path: "/services/:serviceId/restaurants",
+          element: <RestaurantProfile />,
+        },
+        {
+          path: "/services/:serviceId/rooms",
+          element: <RoomProfile />,
+        },
+        {
+          path: "/host/user/:userId",
+          element: <HostProfile />,
+        },
+        {
+          path: "/host/user/:userId/edit",
+          element: <EditProfile />,
+        },
+      ],
+    },
+    {
+      path: "*",
+      element: <NotFound />,
+    },
+  ]);
+
+  return (
+    <>
+      <RouterProvider router={router} />
+    </>
+  );
+}
+
+export default App;
