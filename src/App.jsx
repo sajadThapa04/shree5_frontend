@@ -11,14 +11,18 @@ import MainLayout from "./components/Layouts/Mainlayout/Mainlayout";
 import UserProfile from "./pages/Profile/UserProfile";
 import "./App.css";
 import { CreatedHost, HostProfile } from "./pages/Host/index";
-import EditProfile from "./components/features/HostCard/EditProfile/EditProfile";
-import CreateServices from "./pages/Services/CreateService/CreateServices";
-import CreateRestaurant from "./pages/Restaurants/CreateRestaurants/CreateRestaurants";
-import ServiceProfile from "./pages/Services/ServiceProfile/ServiceProfile";
-import RestaurantProfile from "./pages/Restaurants/RestaurantsProfile/RestaurantProfile";
-import ServiceProtectedRoutes from "./routes/Service_Routes/ServiceProtectedRoutes";
-import CreateRooms from "./pages/Rooms/CreateRooms/CreateRooms";
-import RoomProfile from "./pages/Rooms/RoomProfile/RoomProfile";
+import {
+  EditProfile,
+  CreateServices,
+  CreateRestaurant,
+  ServiceProfile,
+  RestaurantProfile,
+  ServiceProtectedRoutes,
+  CreateRooms,
+  RoomProfile,
+  RoomProfileByRoomId,
+  RoomsLandingProfile,
+} from "./index";
 function App() {
   const router = createBrowserRouter([
     {
@@ -32,6 +36,14 @@ function App() {
         {
           path: "register",
           element: <RegisterUser />,
+        },
+        {
+          index: true,
+          element: <RoomsLandingProfile />,
+        },
+        {
+          path: "/rooms/:roomId",
+          element: <RoomProfileByRoomId />,
         },
       ],
     },
