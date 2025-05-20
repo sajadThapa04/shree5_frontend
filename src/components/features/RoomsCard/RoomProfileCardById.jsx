@@ -9,18 +9,15 @@ import {
   FaTimes,
   FaRulerCombined,
   FaUserFriends,
-  FaEdit,
 } from "react-icons/fa";
 import {
   AmenetiesandTag,
   OpeningHoursCard,
   ServiceNameCard,
 } from "./Components/index";
-import { useNavigate } from "react-router-dom";
 
-const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
+const RoomProfileCardById = ({ room, onBook, isLoading }) => {
   const [selectedImage, setSelectedImage] = useState(null);
-  const navigate = useNavigate();
 
   if (!room) {
     return (
@@ -31,7 +28,6 @@ const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
   }
 
   const {
-    _id,
     name,
     roomType,
     description,
@@ -99,11 +95,6 @@ const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
   const availabilityText =
     availabilityConfig[actualAvailability]?.text || "Unavailable";
 
-  const handleEditRoom = () => {
-    // Navigate to the edit room page with the room ID
-    navigate(`/services/${room.serviceId}/rooms/edit/${_id}`);
-  };
-
   return (
     <>
       <AnimatePresence>
@@ -161,6 +152,7 @@ const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900">{name}</h2>
+                {/* <p className="text-gray-600 capitalize">{roomType} Room</p> */}
               </div>
               <div className="flex flex-wrap gap-2">
                 <span
@@ -215,7 +207,7 @@ const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
             {/* Amenities and Tags */}
             <AmenetiesandTag amenities={amenities} tags={tags} />
 
-            {/* Price and Action Button */}
+            {/* Price and Booking */}
             <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <p className="text-sm text-gray-500">Starting from</p>
@@ -224,34 +216,24 @@ const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
                   <span className="text-sm">/ night</span>
                 </p>
               </div>
-              {isHostView ? (
+              {onBook && (
                 <button
-                  onClick={handleEditRoom}
-                  className="px-6 py-3 rounded-lg text-base font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition-all duration-300 shadow-md flex items-center justify-center gap-2"
-                >
-                  <FaEdit className="h-4 w-4" />
-                  Edit Room
-                </button>
-              ) : (
-                onBook && (
-                  <button
-                    onClick={() => onBook(room)}
-                    disabled={isLoading || !actualAvailability}
-                    className={`px-6 py-3 rounded-lg text-base font-medium text-white ${
-                      isLoading
-                        ? "bg-gray-400"
-                        : !actualAvailability
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600"
-                    } transition-all duration-300 shadow-md`}
-                  >
-                    {isLoading
-                      ? "Processing..."
+                  onClick={() => onBook(room)}
+                  disabled={isLoading || !actualAvailability}
+                  className={`px-6 py-3 rounded-lg text-base font-medium text-white ${
+                    isLoading
+                      ? "bg-gray-400"
                       : !actualAvailability
-                      ? "Not Available"
-                      : "Book Now"}
-                  </button>
-                )
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600"
+                  } transition-all duration-300 shadow-md`}
+                >
+                  {isLoading
+                    ? "Processing..."
+                    : !actualAvailability
+                    ? "Not Available"
+                    : "Book Now"}
+                </button>
               )}
             </div>
           </div>
@@ -261,4 +243,4 @@ const RoomProfileCard = ({ room, onBook, isLoading, isHostView = false }) => {
   );
 };
 
-export default RoomProfileCard;
+export default RoomProfileCardById;

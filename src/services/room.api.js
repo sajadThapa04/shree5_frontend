@@ -1,5 +1,4 @@
 import axios from "axios";
-import {store} from "../stores/stores";
 
 // Rate limiting configuration
 const RATE_LIMIT_CONFIG = {
@@ -38,34 +37,6 @@ roomApi.interceptors.request.use(async config => {
   requestCount++;
   return config;
 }, error => {
-  return Promise.reject(error);
-});
-
-// Response interceptor to handle token refresh
-roomApi.interceptors.response.use(response => response, async error => {
-  const originalRequest = error.config;
-
-  if (
-    error.response
-    ?.status === 401 && !originalRequest._retry) {
-    originalRequest._retry = true;
-
-    try {
-      const {refreshToken} = store.getState().user;
-      if (!refreshToken) 
-        throw new Error("No refresh token");
-      
-      const {data} = await roomApi.post("/refresh-token", {refreshToken});
-      store.dispatch(setAuthTokens({accessToken: data.data.accessToken, refreshToken: data.data.refreshToken}));
-
-      originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
-      return roomApi(originalRequest);
-    } catch (err) {
-      store.dispatch(logoutUsers());
-      return Promise.reject(err);
-    }
-  }
-
   return Promise.reject(error);
 });
 

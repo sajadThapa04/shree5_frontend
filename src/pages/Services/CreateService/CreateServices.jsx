@@ -18,7 +18,7 @@ import {
 import { setActiveService } from "../../../stores/Slices/serviceSlice";
 import { Button } from "../../../components/Ui";
 
-const CreateService = () => {
+const CreateServices = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -276,4 +276,4 @@ const CreateService = () => {
   );
 };
 
-export default CreateService;
+export default CreateServices;

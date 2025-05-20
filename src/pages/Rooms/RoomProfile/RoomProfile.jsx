@@ -23,6 +23,7 @@ import {
   PlusIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { selectHasActiveHost } from "../../../stores/Slices/hostSlice";
 
 const RoomProfile = () => {
   const navigate = useNavigate();
@@ -34,6 +35,13 @@ const RoomProfile = () => {
   const currentRoom = useSelector(selectCurrentRoom);
   const loading = useSelector(selectRoomsLoading);
   const error = useSelector(selectRoomsError);
+  const hasActiveHost = useSelector(selectHasActiveHost);
+
+  // Get user info directly from the user state
+  const currentUser = useSelector((state) => state.user.userInfo);
+
+  // Determine if this is a host view
+  const isHostView = hasActiveHost || currentUser?.role === "host";
 
   // Fetch rooms when component mounts or serviceId changes
   useEffect(() => {
@@ -111,7 +119,9 @@ const RoomProfile = () => {
             Room Details
           </h1>
           <p className="text-gray-600 mb-8">
-            Viewing room information and availability
+            {isHostView
+              ? "Manage your room details"
+              : "Viewing room information and availability"}
           </p>
 
           {currentRoom ? (
@@ -123,8 +133,9 @@ const RoomProfile = () => {
             >
               <RoomProfileCard
                 room={currentRoom}
-                onBook={handleBookRoom}
+                onBook={isHostView ? undefined : handleBookRoom}
                 isLoading={loading}
+                isHostView={isHostView}
               />
             </motion.div>
           ) : (

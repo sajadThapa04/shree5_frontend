@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { FaClock, FaChevronDown, FaChevronUp } from "react-icons/fa";
 
@@ -14,20 +15,42 @@ const OpeningTimeCard = ({ openingHours }) => {
   ];
   const today = days[new Date().getDay()];
 
+  const formatTimeToAMPM = (time) => {
+    if (!time) return "";
+    
+    const [hours, minutes] = time.split(':');
+    const hourNum = parseInt(hours, 10);
+    
+    if (hourNum === 0) return `12:${minutes} AM`;
+    if (hourNum === 12) return `12:${minutes} PM`;
+    
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    const hour12 = hourNum % 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
   const formatTimeSlots = (slots) => {
     if (!slots || slots.length === 0) {
       return <span className="text-gray-400">Closed</span>;
     }
 
+    const is24Hours = slots.some(slot => 
+      slot?.openingTime === "00:00" && slot?.closingTime === "23:59"
+    );
+
     return (
       <div className="flex flex-col space-y-1 mt-1">
-        {slots
-          .filter((slot) => slot?.openingTime && slot?.closingTime)
-          .map((slot, index) => (
-            <span key={index} className="text-gray-600">
-              {slot.openingTime} - {slot.closingTime}
-            </span>
-          ))}
+        {is24Hours ? (
+          <span className="text-gray-600">Open 24 hours</span>
+        ) : (
+          slots
+            .filter((slot) => slot?.openingTime && slot?.closingTime)
+            .map((slot, index) => (
+              <span key={index} className="text-gray-600">
+                {formatTimeToAMPM(slot.openingTime)} - {formatTimeToAMPM(slot.closingTime)}
+              </span>
+            ))
+        )}
       </div>
     );
   };
@@ -74,7 +97,9 @@ const OpeningTimeCard = ({ openingHours }) => {
                   >
                     {day.charAt(0).toUpperCase() + day.slice(1)}
                     {isToday && (
-                      <span className="ml-2 text-xs text-rose-500">(Today)</span>
+                      <span className="ml-2 text-xs text-rose-500">
+                        (Today)
+                      </span>
                     )}
                   </span>
                   {formatTimeSlots(slots)}

@@ -285,3 +285,38 @@ export const getServicesForHost = async hostId => {
     throw new Error(errorMessage);
   }
 };
+
+/**
+ * Get all service names (public endpoint)
+ * @returns {Object} Response object with success status, data (array of services), and message
+ */
+export const getServiceNames = async () => {
+  try {
+    const response = await serviceApi.get("/public/names");
+
+    if (
+      !response.data
+      ?.success) {
+      throw new Error(
+        response.data
+        ?.message || "Invalid response structure");
+    }
+
+    return {
+      success: true, data: response.data.data, // Array of service objects with name, type, _id
+      message: response.data.message || "Service names fetched successfully",
+      statusCode: response.status
+    };
+  } catch (error) {
+    let errorMessage = "Failed to fetch service names";
+
+    if (error.response) {
+      errorMessage = error.response.data
+        ?.message || error.response.statusText || `Server error (${error.response.status})`;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
+  }
+};
