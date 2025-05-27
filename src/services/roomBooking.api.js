@@ -9,21 +9,6 @@ export const bookingApi = axios.create({
   }
 });
 
-// Request interceptor for adding auth token when available
-bookingApi.interceptors.request.use(config => {
-  const token = store.getState()
-    ?.user
-      ?.accessToken;
-  if (token && !config.url.endsWith("/guest")) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, error => {
-  return Promise.reject(error);
-});
-
-
-
 /**
  * Create a new authenticated user booking
  * @param {Object} bookingData - Booking details
@@ -32,9 +17,29 @@ bookingApi.interceptors.request.use(config => {
 export const createUserBooking = async bookingData => {
   try {
     const response = await bookingApi.post("/user", bookingData);
-    return handleBookingResponse(response, "Booking created successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to create booking",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Booking created successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to create booking");
+    let errorMessage = "Failed to create booking";
+
+    if (error.response) {
+      errorMessage = error.response.data
+        ?.message || error.response.statusText;
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -45,10 +50,31 @@ export const createUserBooking = async bookingData => {
  */
 export const createGuestBooking = async bookingData => {
   try {
+    console.log("Received booking data:", JSON.stringify(bookingData, null, 2));
     const response = await bookingApi.post("/guest", bookingData);
-    return handleBookingResponse(response, "Guest booking created successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to create guest booking",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Guest booking created successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to create guest booking");
+    let errorMessage = "Failed to create guest booking";
+
+    if (error.response) {
+      errorMessage = error.response.data
+        ?.message || error.response.statusText;
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -61,12 +87,35 @@ export const createGuestBooking = async bookingData => {
 export const updateBooking = async (bookingId, updateData) => {
   try {
     const response = await bookingApi.patch(`/${bookingId}`, updateData);
-    return handleBookingResponse(response, "Booking updated successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to update booking",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Booking updated successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to update booking", {
-      404: "Booking not found",
-      403: "You are not authorized to update this booking"
-    });
+    let errorMessage = "Failed to update booking";
+
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = "Booking not found";
+      } else if (error.response.status === 403) {
+        errorMessage = "You are not authorized to update this booking";
+      } else {
+        errorMessage = error.response.data
+          ?.message || error.response.statusText;
+      }
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -78,12 +127,35 @@ export const updateBooking = async (bookingId, updateData) => {
 export const cancelBooking = async bookingId => {
   try {
     const response = await bookingApi.delete(`/${bookingId}`);
-    return handleBookingResponse(response, "Booking cancelled successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to cancel booking",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Booking cancelled successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to cancel booking", {
-      404: "Booking not found",
-      403: "You are not authorized to cancel this booking"
-    });
+    let errorMessage = "Failed to cancel booking";
+
+    if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = "Booking not found";
+      } else if (error.response.status === 403) {
+        errorMessage = "You are not authorized to cancel this booking";
+      } else {
+        errorMessage = error.response.data
+          ?.message || error.response.statusText;
+      }
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -94,9 +166,29 @@ export const cancelBooking = async bookingId => {
 export const getUserBookings = async () => {
   try {
     const response = await bookingApi.get("/user");
-    return handleBookingResponse(response, "User bookings fetched successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to fetch user bookings",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "User bookings fetched successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to fetch user bookings");
+    let errorMessage = "Failed to fetch user bookings";
+
+    if (error.response) {
+      errorMessage = error.response.data
+        ?.message || error.response.statusText;
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -110,9 +202,29 @@ export const getGuestBookings = async email => {
     const response = await bookingApi.get("/user", {params: {
         email
       }});
-    return handleBookingResponse(response, "Guest bookings fetched successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to fetch guest bookings",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Guest bookings fetched successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to fetch guest bookings");
+    let errorMessage = "Failed to fetch guest bookings";
+
+    if (error.response) {
+      errorMessage = error.response.data
+        ?.message || error.response.statusText;
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -124,12 +236,35 @@ export const getGuestBookings = async email => {
 export const getServiceBookings = async serviceId => {
   try {
     const response = await bookingApi.get(`/service/${serviceId}`);
-    return handleBookingResponse(response, "Service bookings fetched successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to fetch service bookings",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Service bookings fetched successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to fetch service bookings", {
-      403: "You don't have permission to view these bookings",
-      404: "Service not found"
-    });
+    let errorMessage = "Failed to fetch service bookings";
+
+    if (error.response) {
+      if (error.response.status === 403) {
+        errorMessage = "You don't have permission to view these bookings";
+      } else if (error.response.status === 404) {
+        errorMessage = "Service not found";
+      } else {
+        errorMessage = error.response.data
+          ?.message || error.response.statusText;
+      }
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
 };
 
@@ -149,38 +284,30 @@ export const checkRoomAvailability = async (roomId, checkInDate, checkOutDate) =
         checkOutDate: checkOutDate.toISOString()
       }
     });
-    return handleBookingResponse(response, "Availability checked successfully");
+
+    if (response.data && response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.message || "Failed to check room availability",
+        data: null
+      };
+    }
+
+    return {success: true, data: response.data, message: "Availability checked successfully"};
   } catch (error) {
-    return handleBookingError(error, "Failed to check room availability");
+    let errorMessage = "Failed to check room availability";
+
+    if (error.response) {
+      errorMessage = error.response.data
+        ?.message || error.response.statusText;
+
+      return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
+    } else if (error.request) {
+      errorMessage = "No response received from server";
+    }
+
+    return {success: false, error: errorMessage, data: null};
   }
-};
-
-// Helper function to handle successful booking responses
-const handleBookingResponse = (response, defaultMessage) => ({
-  success: true,
-  data: response.data
-    ?.data || response.data,
-  message: response.data
-    ?.message || defaultMessage
-});
-
-// Helper function to handle booking errors
-const handleBookingError = (error, defaultMessage, statusMessages = {}) => {
-  let errorMessage = defaultMessage;
-
-  if (error.response) {
-    errorMessage = error.response.data
-      ?.message || statusMessages[error.response.status] || error.response.statusText || `Server error (${error.response.status})`;
-  } else if (error.request) {
-    errorMessage = "No response received from server";
-  }
-
-  return {
-    success: false,
-    error: errorMessage,
-    status: error.response
-      ?.status
-  };
 };
 
 // Export all functions

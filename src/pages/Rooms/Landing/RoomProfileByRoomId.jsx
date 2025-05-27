@@ -62,7 +62,7 @@ const RoomProfileByRoomId = () => {
 
   const handleBack = () => navigate(-1);
   const handleBookRoom = () => {
-    navigate(`/bookings/new?roomId=${roomId}`);
+    navigate(`/room/${roomId}/bookings`);
   };
 
   const isLoading = loading || serviceNamesLoading;

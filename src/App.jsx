@@ -23,6 +23,8 @@ import {
   RoomProfileByRoomId,
   RoomsLandingProfile,
 } from "./index";
+import GuestBooking from "./pages/RoomBookings/GuestBooking/GuestBooking";
+
 function App() {
   const router = createBrowserRouter([
     {
@@ -44,6 +46,10 @@ function App() {
         {
           path: "/rooms/:roomId",
           element: <RoomProfileByRoomId />,
+        },
+        {
+          path: "/room/:roomId/bookings",
+          element: <GuestBooking />,
         },
       ],
     },
