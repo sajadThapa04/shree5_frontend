@@ -1,7 +1,15 @@
 import React, { useState } from "react";
 import { Card } from "../../Ui";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaBed, FaCalendarAlt, FaUser, FaTimes } from "react-icons/fa";
+import {
+  FaBed,
+  FaCalendarAlt,
+  FaUser,
+  FaTimes,
+  FaCreditCard,
+  FaPaypal,
+} from "react-icons/fa";
+import { SiRazorpay } from "react-icons/si";
 import { useForm } from "react-hook-form";
 import DatePicker from "../../Ui/form/DatePicker";
 import { Button } from "../../Ui/index";
@@ -13,6 +21,27 @@ import {
   RoomStats,
 } from "./Components";
 
+const PAYMENT_METHODS = [
+  {
+    id: "stripe",
+    name: "Credit/Debit Card",
+    icon: <FaCreditCard className="mr-2" />,
+    available: true,
+  },
+  {
+    id: "paypal",
+    name: "PayPal",
+    icon: <FaPaypal className="mr-2" />,
+    available: false,
+  },
+  {
+    id: "razorpay",
+    name: "Razorpay",
+    icon: <SiRazorpay className="mr-2" />,
+    available: false,
+  },
+];
+
 const RoomBookingCard = ({
   room,
   onBook,
@@ -21,18 +50,29 @@ const RoomBookingCard = ({
   user,
   bookingData,
 }) => {
+  // Validate required props
+  if (!room || !room._id || !room.host || !room.service) {
+    return (
+      <div className="text-center p-4 text-red-500">
+        Error: Incomplete room data provided
+      </div>
+    );
+  }
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
     setValue,
+    control,
   } = useForm({
     defaultValues: {
       checkInDate: bookingData?.checkInDate || "",
       checkOutDate: bookingData?.checkOutDate || "",
       numberOfGuests: bookingData?.numberOfGuests || 1,
       specialRequests: bookingData?.specialRequests || "",
+      paymentMethod: bookingData?.paymentMethod || "stripe",
       ...(isGuest && {
         guestInfo: {
           fullName: bookingData?.guestInfo?.fullName || "",
@@ -47,42 +87,48 @@ const RoomBookingCard = ({
   const checkInDate = watch("checkInDate");
   const checkOutDate = watch("checkOutDate");
   const numberOfGuests = watch("numberOfGuests");
+  const paymentMethod = watch("paymentMethod");
 
-  const totalPrice = calculateTotalPrice(
-    room?.pricePerNight,
-    checkInDate,
-    checkOutDate
-  );
+  // Calculate total price with validation
+  const totalPrice =
+    calculateTotalPrice(room?.pricePerNight, checkInDate, checkOutDate) || 0;
 
   const handleDateChange = (name, date) => {
-    setValue(name, date);
+    if (!date) return;
+    setValue(name, date, { shouldValidate: true });
   };
 
   const onSubmit = (data) => {
+    if (!data.checkInDate || !data.checkOutDate) {
+      console.error("Missing check-in/check-out dates");
+      return;
+    }
+
+    // Ensure dates are properly formatted
     const bookingDetails = {
       ...data,
-      host: room?.host,
-      service: room?.service,
-      room: room?._id,
-      totalPrice,
-      paymentMethod: "stripe",
+      checkInDate: data.checkInDate.toISOString(), // UTC
+      checkOutDate: data.checkOutDate.toISOString(),
+      host: room.host,
+      service: room.service,
+      room: room._id,
+      totalPrice: calculateTotalPrice(
+        room?.pricePerNight,
+        new Date(data.checkInDate),
+        new Date(data.checkOutDate)
+      ),
+      paymentMethod: data.paymentMethod || "stripe",
+      numberOfGuests: Number(data.numberOfGuests),
     };
+
     onBook(bookingDetails);
   };
-
-  if (!room) {
-    return (
-      <div className="text-center p-4 text-gray-500">
-        No room data available
-      </div>
-    );
-  }
 
   const {
     name,
     roomType,
     pricePerNight,
-    capacity,
+    capacity = { adults: 1, children: 0 }, // Default capacity
     size,
     amenities = [],
     tags = [],
@@ -90,9 +136,11 @@ const RoomBookingCard = ({
     isAvailable,
   } = room;
 
+  // Calculate max guests with fallback
+  const maxGuests = (capacity?.adults || 1) + (capacity?.children || 0);
+
   return (
     <>
-      {/* Improved Fullscreen Image Modal */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div
@@ -125,6 +173,10 @@ const RoomBookingCard = ({
                   src={selectedImage}
                   alt={`Fullscreen view - ${name}`}
                   className="max-w-full max-h-full object-contain rounded-lg"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/placeholder-room.jpg";
+                  }}
                 />
               </motion.div>
             </div>
@@ -179,6 +231,11 @@ const RoomBookingCard = ({
                       error={errors.checkInDate}
                       required
                     />
+                    {errors.checkInDate && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.checkInDate.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -197,6 +254,11 @@ const RoomBookingCard = ({
                       error={errors.checkOutDate}
                       required
                     />
+                    {errors.checkOutDate && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.checkOutDate.message}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -213,21 +275,18 @@ const RoomBookingCard = ({
                         message: "At least 1 guest is required",
                       },
                       max: {
-                        value: capacity.adults + capacity.children,
-                        message: `Maximum ${
-                          capacity.adults + capacity.children
-                        } guests allowed`,
+                        value: maxGuests,
+                        message: `Maximum ${maxGuests} guests allowed`,
                       },
+                      valueAsNumber: true, // This will convert the value to number
                     })}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500"
                   >
-                    {[...Array(capacity.adults + capacity.children).keys()].map(
-                      (num) => (
-                        <option key={num + 1} value={num + 1}>
-                          {num + 1} {num + 1 === 1 ? "guest" : "guests"}
-                        </option>
-                      )
-                    )}
+                    {[...Array(maxGuests).keys()].map((num) => (
+                      <option key={num + 1} value={num + 1}>
+                        {num + 1} {num + 1 === 1 ? "guest" : "guests"}
+                      </option>
+                    ))}
                   </select>
                   {errors.numberOfGuests && (
                     <p className="mt-1 text-sm text-red-600">
@@ -240,7 +299,9 @@ const RoomBookingCard = ({
                   <GuestInfoForm
                     register={register}
                     errors={errors}
-                    roomCapacity={room.capacity}
+                    roomCapacity={capacity}
+                    control={control}
+                    setValue={setValue}
                   />
                 )}
 
@@ -249,11 +310,70 @@ const RoomBookingCard = ({
                     Special Requests
                   </label>
                   <textarea
-                    {...register("specialRequests")}
+                    {...register("specialRequests", {
+                      maxLength: {
+                        value: 500,
+                        message:
+                          "Special requests cannot exceed 500 characters",
+                      },
+                    })}
                     rows={3}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-rose-500 focus:border-rose-500"
                     placeholder="Any special requirements or notes..."
                   />
+                  {errors.specialRequests && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.specialRequests.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Payment Method Selection */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Payment Method
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {PAYMENT_METHODS.map((method) => (
+                      <div key={method.id}>
+                        <input
+                          type="radio"
+                          id={`payment-${method.id}`}
+                          value={method.id}
+                          {...register("paymentMethod", {
+                            required: "Payment method is required",
+                          })}
+                          className="hidden peer"
+                          disabled={!method.available}
+                        />
+                        <label
+                          htmlFor={`payment-${method.id}`}
+                          className={`flex items-center p-4 border rounded-lg cursor-pointer ${
+                            paymentMethod === method.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-300"
+                          } ${
+                            !method.available
+                              ? "opacity-50 cursor-not-allowed"
+                              : "hover:border-blue-300"
+                          }`}
+                        >
+                          {method.icon}
+                          <span>{method.name}</span>
+                          {!method.available && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              (Coming soon)
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  {errors.paymentMethod && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.paymentMethod.message}
+                    </p>
+                  )}
                 </div>
               </div>
 

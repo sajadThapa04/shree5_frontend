@@ -4,17 +4,26 @@ import {createGuestBooking} from "../../services/roomBooking.api";
 export const useGuestBooking = () => {
   return useMutation({
     mutationFn: async bookingData => {
-      const response = await createGuestBooking(bookingData);
-      if (!response.success) {
-        throw new Error(response.error || "Failed to create guest booking");
+      // Validate required fields before making the API call
+      if (!bookingData.host || !bookingData.service || !bookingData.room) {
+        throw new Error("Missing required booking information");
       }
-      return response;
+
+      const response = await createGuestBooking(bookingData);
+
+      if (!response.success) {
+        throw new Error(response.message || "Failed to create booking");
+      }
+
+      return response.data;
     },
     onSuccess: data => {
-      console.log("Guest booking created successfully", data);
+      console.log("Booking created successfully:", data);
+      // You can add toast notification here
     },
     onError: error => {
-      console.error("Failed to create guest booking", error.message);
+      console.error("Booking error:", error.message);
+      // You can add error toast here
     }
   });
 };

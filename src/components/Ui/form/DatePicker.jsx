@@ -14,11 +14,27 @@ const DatePicker = ({
   required = false,
   ...props
 }) => {
+  const handleDateChange = (date) => {
+    if (!date) return onChange(null);
+
+    // Create a new date object
+    const adjustedDate = new Date(date);
+
+    // Set to noon in LOCAL timezone (what the user sees)
+    adjustedDate.setHours(12, 0, 0, 0);
+
+    // Send the local date directly without UTC conversion
+    onChange(adjustedDate);
+  };
+
+  // For display, use the date as-is (already in local time)
+  const displayDate = selected ? new Date(selected) : null;
+
   return (
     <div className={`relative ${className}`}>
       <ReactDatePicker
-        selected={selected ? new Date(selected) : null}
-        onChange={onChange}
+        selected={displayDate}
+        onChange={handleDateChange}
         minDate={minDate}
         maxDate={maxDate}
         placeholderText={placeholderText}

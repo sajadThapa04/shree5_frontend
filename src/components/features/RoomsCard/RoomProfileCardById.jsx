@@ -18,6 +18,7 @@ import {
 
 const RoomProfileCardById = ({ room, onBook, isLoading }) => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   if (!room) {
     return (
@@ -95,6 +96,11 @@ const RoomProfileCardById = ({ room, onBook, isLoading }) => {
   const availabilityText =
     availabilityConfig[actualAvailability]?.text || "Unavailable";
 
+  // Toggle description view
+  const toggleDescription = () => {
+    setShowFullDescription(!showFullDescription);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -152,7 +158,6 @@ const RoomProfileCardById = ({ room, onBook, isLoading }) => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900">{name}</h2>
-                {/* <p className="text-gray-600 capitalize">{roomType} Room</p> */}
               </div>
               <div className="flex flex-wrap gap-2">
                 <span
@@ -196,12 +201,31 @@ const RoomProfileCardById = ({ room, onBook, isLoading }) => {
               </div>
             </div>
 
-            {/* Description */}
+            {/* Enhanced Description Section */}
             <div className="space-y-2">
               <h3 className="text-xl font-semibold text-gray-900">
                 Description
               </h3>
-              <p className="text-gray-700">{description}</p>
+              <div
+                className={`text-gray-700 relative ${
+                  !showFullDescription && description.length > 200
+                    ? "max-h-24 overflow-hidden"
+                    : ""
+                }`}
+              >
+                <p className="whitespace-pre-line">{description}</p>
+                {!showFullDescription && description.length > 200 && (
+                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent" />
+                )}
+              </div>
+              {description.length > 200 && (
+                <button
+                  onClick={toggleDescription}
+                  className="text-rose-600 hover:text-rose-800 text-sm font-medium mt-1"
+                >
+                  {showFullDescription ? "Show less" : "Read more"}
+                </button>
+              )}
             </div>
 
             {/* Amenities and Tags */}

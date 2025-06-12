@@ -41,23 +41,21 @@ paymentApi.interceptors.request.use(async config => {
 });
 
 /**
- * Create a new payment
- * @param {Object} paymentData - Payment data including booking, paymentMethod, amount, etc.
+ * Create a new payment (authenticated user)
+ * @param {Object} paymentData - Payment data
  * @returns {Object} Response object with success status, data, and message
  */
-export const createPayment = async paymentData => {
+export const createUserPayment = async paymentData => {
   try {
-    // Validate required fields
     if (!paymentData.booking || !paymentData.paymentMethod || !paymentData.amount) {
       throw new Error("Booking, payment method, and amount are required fields");
     }
 
-    // Validate amount
     if (paymentData.amount <= 0) {
       throw new Error("Amount must be greater than 0");
     }
 
-    const response = await paymentApi.post("/", paymentData);
+    const response = await paymentApi.post("/user", paymentData);
 
     if (
       !response.data
@@ -70,7 +68,7 @@ export const createPayment = async paymentData => {
     return {
       success: true,
       data: response.data.data,
-      message: response.data.message || "Payment initiated successfully",
+      message: response.data.message || "Payment created successfully",
       statusCode: response.status
     };
   } catch (error) {
@@ -83,7 +81,166 @@ export const createPayment = async paymentData => {
       } else if (error.response.status === 401) {
         errorMessage = "Authentication required";
       } else if (error.response.status === 403) {
-        errorMessage = "Not authorized to create payment";
+        errorMessage = "Not authorized";
+      } else {
+        errorMessage = error.response.data
+          ?.message || error.response.statusText || `Server error (${error.response.status})`;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Create a new guest payment
+ * @param {Object} paymentData - Payment data including guest info
+ * @returns {Object} Response object with success status, data, and message
+ */
+
+export const createGuestPayment = async paymentData => {
+  try {
+    console.log("Received booking data:", JSON.stringify(paymentData, null, 2));
+    const payload = {
+      booking: paymentData.booking,
+      paymentMethod: paymentData.paymentMethod,
+      amount: paymentData.amount,
+      paymentMetadata: paymentData.paymentMetadata || {},
+      guestInfo: {
+        // Nest the email under guestInfo
+        email: paymentData.email
+      }
+    };
+
+    console.log("Sending payment data:", JSON.stringify(payload, null, 2));
+
+    const response = await paymentApi.post("/guest", payload);
+
+    if (
+      !response.data
+      ?.success) {
+      throw new Error(
+        response.data
+        ?.message || "Invalid response structure");
+    }
+
+    return {
+      success: true,
+      data: response.data.data,
+      message: response.data.message || "Guest payment created successfully",
+      statusCode: response.status
+    };
+  } catch (error) {
+    let errorMessage = "Failed to create guest payment";
+
+    if (error.response) {
+      if (error.response.status === 400) {
+        errorMessage = error.response.data
+          ?.message || "Validation failed";
+      } else if (error.response.status === 403) {
+        errorMessage = "Guest payment not allowed";
+      } else {
+        errorMessage = error.response.data
+          ?.message || error.response.statusText || `Server error (${error.response.status})`;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Confirm a user payment (authenticated)
+ * @param {Object} confirmationData - { paymentIntentId, paymentMethodId }
+ * @returns {Object} Response object with success status, data, and message
+ */
+export const confirmUserPayment = async confirmationData => {
+  try {
+    if (!confirmationData.paymentIntentId || !confirmationData.paymentMethodId) {
+      throw new Error("Payment intent ID and payment method ID are required");
+    }
+
+    const response = await paymentApi.post("/users/confirm", confirmationData);
+
+    if (
+      !response.data
+      ?.success) {
+      throw new Error(
+        response.data
+        ?.message || "Invalid response structure");
+    }
+
+    return {
+      success: true,
+      data: response.data.data,
+      message: response.data.message || "Payment confirmed successfully",
+      statusCode: response.status
+    };
+  } catch (error) {
+    let errorMessage = "Failed to confirm payment";
+
+    if (error.response) {
+      if (error.response.status === 400) {
+        errorMessage = error.response.data
+          ?.message || "Validation failed";
+      } else if (error.response.status === 401) {
+        errorMessage = "Authentication required";
+      } else if (error.response.status === 403) {
+        errorMessage = "Not authorized to confirm this payment";
+      } else if (error.response.status === 404) {
+        errorMessage = "Payment not found";
+      } else {
+        errorMessage = error.response.data
+          ?.message || error.response.statusText || `Server error (${error.response.status})`;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Confirm a guest payment
+ * @param {Object} confirmationData - { paymentIntentId, paymentMethodId, email }
+ * @returns {Object} Response object with success status, data, and message
+ */
+export const confirmGuestPayment = async confirmationData => {
+  try {
+    if (!confirmationData.paymentIntentId || !confirmationData.paymentMethodId || !confirmationData.email) {
+      throw new Error("Payment intent ID, payment method ID, and email are required");
+    }
+
+    const response = await paymentApi.post("/guest/confirm", confirmationData);
+
+    if (
+      !response.data
+      ?.success) {
+      throw new Error(
+        response.data
+        ?.message || "Invalid response structure");
+    }
+
+    return {
+      success: true,
+      data: response.data.data,
+      message: response.data.message || "Guest payment confirmed successfully",
+      statusCode: response.status
+    };
+  } catch (error) {
+    let errorMessage = "Failed to confirm guest payment";
+
+    if (error.response) {
+      if (error.response.status === 400) {
+        errorMessage = error.response.data
+          ?.message || "Validation failed";
+      } else if (error.response.status === 404) {
+        errorMessage = "Payment not found";
       } else {
         errorMessage = error.response.data
           ?.message || error.response.statusText || `Server error (${error.response.status})`;
@@ -99,7 +256,7 @@ export const createPayment = async paymentData => {
 /**
  * Update payment status
  * @param {String} paymentId - Payment ID
- * @param {String} status - New payment status
+ * @param {String} status - New status
  * @returns {Object} Response object with success status, data, and message
  */
 export const updatePaymentStatus = async (paymentId, status) => {
@@ -150,58 +307,6 @@ export const updatePaymentStatus = async (paymentId, status) => {
 };
 
 /**
- * Confirm a payment (for payment methods that require confirmation)
- * @param {Object} confirmationData - Payment confirmation data
- * @returns {Object} Response object with success status, data, and message
- */
-export const confirmPayment = async confirmationData => {
-  try {
-    if (!confirmationData.paymentId || !confirmationData.paymentMethod) {
-      throw new Error("Payment ID and payment method are required");
-    }
-
-    const response = await paymentApi.post("/confirm", confirmationData);
-
-    if (
-      !response.data
-      ?.success) {
-      throw new Error(
-        response.data
-        ?.message || "Invalid response structure");
-    }
-
-    return {
-      success: true,
-      data: response.data.data,
-      message: response.data.message || "Payment confirmed successfully",
-      statusCode: response.status
-    };
-  } catch (error) {
-    let errorMessage = "Failed to confirm payment";
-
-    if (error.response) {
-      if (error.response.status === 400) {
-        errorMessage = error.response.data
-          ?.message || "Validation failed";
-      } else if (error.response.status === 401) {
-        errorMessage = "Authentication required";
-      } else if (error.response.status === 403) {
-        errorMessage = "Not authorized to confirm this payment";
-      } else if (error.response.status === 404) {
-        errorMessage = "Payment not found";
-      } else {
-        errorMessage = error.response.data
-          ?.message || error.response.statusText || `Server error (${error.response.status})`;
-      }
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-
-    throw new Error(errorMessage);
-  }
-};
-
-/**
  * Get payment by ID
  * @param {String} paymentId - Payment ID
  * @returns {Object} Response object with success status, data, and message
@@ -212,7 +317,7 @@ export const getPaymentById = async paymentId => {
       throw new Error("Payment ID is required");
     }
 
-    const response = await paymentApi.get(`/${paymentId}`);
+    const response = await paymentApi.get(`/user/${paymentId}`);
 
     if (
       !response.data
@@ -229,7 +334,7 @@ export const getPaymentById = async paymentId => {
       statusCode: response.status
     };
   } catch (error) {
-    let errorMessage = "Failed to fetch payment details";
+    let errorMessage = "Failed to get payment";
 
     if (error.response) {
       if (error.response.status === 401) {
@@ -251,8 +356,8 @@ export const getPaymentById = async paymentId => {
 };
 
 /**
- * Get all payments for the current user
- * @param {Object} options - Pagination and filtering options
+ * Get all payments for current user
+ * @param {Object} options - { page, limit, status }
  * @returns {Object} Response object with success status, data, and message
  */
 export const getUserPayments = async (options = {}) => {
@@ -288,11 +393,13 @@ export const getUserPayments = async (options = {}) => {
       statusCode: response.status
     };
   } catch (error) {
-    let errorMessage = "Failed to fetch user payments";
+    let errorMessage = "Failed to get user payments";
 
     if (error.response) {
       if (error.response.status === 401) {
         errorMessage = "Authentication required";
+      } else if (error.response.status === 403) {
+        errorMessage = "Not authorized to view payments";
       } else {
         errorMessage = error.response.data
           ?.message || error.response.statusText || `Server error (${error.response.status})`;
@@ -306,7 +413,7 @@ export const getUserPayments = async (options = {}) => {
 };
 
 /**
- * Process a refund for a payment
+ * Process a refund
  * @param {String} paymentId - Payment ID
  * @param {Number} refundAmount - Amount to refund
  * @returns {Object} Response object with success status, data, and message

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { InputField, SelectField } from "../../../Ui/form/index";
-import { PhoneIcon } from "@heroicons/react/24/outline";
 
 const countryOptions = [
   { value: "AU", label: "🇦🇺 +61", code: "+61" },
@@ -85,7 +84,6 @@ function PhoneField({ register, errors, setValue, watch }) {
             value={phoneDigits}
             onChange={handlePhoneChange}
             placeholder="1234567890"
-            icon={<PhoneIcon className="h-5 w-5 text-gray-400" />}
             error={errors.phone?.message}
           />
         </div>

@@ -19,7 +19,7 @@ import {
   ErrorMessage,
   LoadingSpinner,
 } from "../../../components/Ui/index";
-import { ArrowLeftIcon, HomeIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import RoomProfileCardById from "../../../components/features/RoomsCard/RoomProfileCardById";
 
 const RoomProfileByRoomId = () => {
@@ -37,7 +37,7 @@ const RoomProfileByRoomId = () => {
 
   // Find the service name for the current room
   const currentService = allServiceNames.find(
-    (service) => service._id === currentRoom?.service
+    (service) => service._id === currentRoom?.service?._id
   );
 
   // Fetch room and service names when component mounts or roomId changes
@@ -75,34 +75,12 @@ const RoomProfileByRoomId = () => {
       transition={{ duration: 0.5 }}
       className="max-w-4xl mx-auto p-4 md:p-6"
     >
-      {/* Navigation Buttons */}
-      {/* <div className="flex justify-between items-center mb-6">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          icon={ArrowLeftIcon}
-          iconPosition="left"
-        >
-          Back
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/")}
-          icon={HomeIcon}
-          iconPosition="right"
-        >
-          Home
-        </Button>
-      </div> */}
-
-      {/* Error Message */}
       {error && (
         <div className="mb-6">
           <ErrorMessage message={error} />
         </div>
       )}
 
-      {/* Main Content */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
@@ -115,11 +93,6 @@ const RoomProfileByRoomId = () => {
         >
           <h1 className="text-3xl font-bold text-gray-900 mb-6">
             {currentService?.name || "Service Name Not Available"}
-            {currentRoom.name && (
-              <span className="block text-lg font-normal text-gray-600 mt-2">
-                {/* Room: {currentRoom.name} */}
-              </span>
-            )}
           </h1>
           <RoomProfileCardById
             room={currentRoom}
@@ -129,7 +102,9 @@ const RoomProfileByRoomId = () => {
         </motion.div>
       ) : (
         <div className="text-center py-16 bg-white rounded-xl shadow-sm p-6">
-          <p className="text-gray-500 text-lg mb-4">Room not found</p>
+          <p className="text-gray-500 text-lg mb-4">
+            {error || "Room not found"}
+          </p>
           <Button variant="primary" onClick={handleBack}>
             Back to Rooms
           </Button>

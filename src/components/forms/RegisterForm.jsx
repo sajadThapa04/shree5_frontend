@@ -32,7 +32,7 @@ const countryOptions = [
 const RegisterForm = ({ onSubmit, isLoading, error }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState("NP");
+  const [selectedCountry, setSelectedCountry] = useState("AU");
   const [phoneDigits, setPhoneDigits] = useState("");
 
   // Set default country based on user's IP

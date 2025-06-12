@@ -1,6 +1,7 @@
-// components/RoomBooking/GuestInfoForm.jsx
-import { FiUser, FiMail,  } from "react-icons/fi";
+import { FiUser, FiMail } from "react-icons/fi";
 import GuestSelector from "./GuestSelector";
+import { useEffect } from "react";
+
 const countryOptions = [
   { value: "AU", label: "🇦🇺 +61", code: "+61" },
   { value: "IN", label: "🇮🇳 +91", code: "+91" },
@@ -11,7 +12,37 @@ const countryOptions = [
   { value: "CA", label: "🇨🇦 +1", code: "+1" },
 ];
 
-const GuestInfoForm = ({ register, errors, roomCapacity }) => {
+const DEFAULT_COUNTRY = "US"; // Fallback country
+
+const GuestInfoForm = ({ register, errors, roomCapacity, setValue }) => {
+  // Detect user's country on component mount
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const response = await fetch("https://ipapi.co/json/");
+        const data = await response.json();
+        const userCountry = data.country;
+
+        // Find matching country from our options
+        const matchedCountry =
+          countryOptions.find((country) => country.value === userCountry) ||
+          countryOptions.find((country) => country.value === DEFAULT_COUNTRY);
+
+        if (matchedCountry) {
+          setValue("guestInfo.countryCode", matchedCountry.code);
+        }
+      } catch (error) {
+        console.log("Country detection failed, using default");
+        const defaultCountry = countryOptions.find(
+          (country) => country.value === DEFAULT_COUNTRY
+        );
+        setValue("guestInfo.countryCode", defaultCountry.code);
+      }
+    };
+
+    detectCountry();
+  }, [setValue]);
+
   return (
     <div className="space-y-6">
       {/* Guest Selector */}
@@ -73,8 +104,6 @@ const GuestInfoForm = ({ register, errors, roomCapacity }) => {
 
         {/* Phone Number with Country Selector */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          </div>
           <div className="flex">
             <select
               {...register("guestInfo.countryCode")}

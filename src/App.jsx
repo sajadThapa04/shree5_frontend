@@ -24,6 +24,7 @@ import {
   RoomsLandingProfile,
 } from "./index";
 import GuestBooking from "./pages/RoomBookings/GuestBooking/GuestBooking";
+import GuestPayment from "./pages/RoomPayment/GuestRoomPayment";
 
 function App() {
   const router = createBrowserRouter([
@@ -50,6 +51,10 @@ function App() {
         {
           path: "/room/:roomId/bookings",
           element: <GuestBooking />,
+        },
+        {
+          path: "/payment/:bookingId",
+          element: <GuestPayment />,
         },
       ],
     },

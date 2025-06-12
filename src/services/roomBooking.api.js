@@ -48,36 +48,38 @@ export const createUserBooking = async bookingData => {
  * @param {Object} bookingData - Booking details including guestInfo
  * @returns {Promise<Object>} - Created booking data
  */
+
 export const createGuestBooking = async bookingData => {
   try {
     console.log("Received booking data:", JSON.stringify(bookingData, null, 2));
+
     const response = await bookingApi.post("/guest", bookingData);
 
-    if (response.data && response.data.success === false) {
+    if (
+      !response.data
+      ?.success) {
       return {
         success: false,
-        error: response.data.message || "Failed to create guest booking",
+        error: response.data
+          ?.message || "Failed to create booking",
         data: null
       };
     }
 
-    return {success: true, data: response.data, message: "Guest booking created successfully"};
+    return {success: true, data: response.data.data, message: "Booking created successfully"};
   } catch (error) {
-    let errorMessage = "Failed to create guest booking";
+    let errorMessage = "Failed to create booking";
 
     if (error.response) {
       errorMessage = error.response.data
         ?.message || error.response.statusText;
 
       return {success: false, error: errorMessage, statusCode: error.response.status, data: null};
-    } else if (error.request) {
-      errorMessage = "No response received from server";
     }
 
     return {success: false, error: errorMessage, data: null};
   }
 };
-
 /**
  * Update an existing booking
  * @param {string} bookingId - ID of the booking to update
