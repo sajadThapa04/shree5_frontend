@@ -25,6 +25,8 @@ import {
 } from "./index";
 import GuestBooking from "./pages/RoomBookings/GuestBooking/GuestBooking";
 import GuestPayment from "./pages/RoomPayment/GuestRoomPayment";
+import RestaurantLandingProfile from "./pages/Restaurants/Landing/RestaurantLandingProfile";
+import RestaurantProfileByRestaurantId from "./pages/Restaurants/Landing/RestaurantProfileByRestaurantId";
 
 function App() {
   const router = createBrowserRouter([
@@ -47,6 +49,14 @@ function App() {
         {
           path: "/rooms/:roomId",
           element: <RoomProfileByRoomId />,
+        },
+        {
+          path: "restaurants",
+          element: <RestaurantLandingProfile />,
+        },
+        {
+          path: "/restaurants/:restaurantId",
+          element: <RestaurantProfileByRestaurantId />,
         },
         {
           path: "/room/:roomId/bookings",

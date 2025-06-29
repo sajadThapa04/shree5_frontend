@@ -43,12 +43,12 @@ export const fetchAllRestaurants = createAsyncThunk("restaurants/fetchAll", asyn
     if (!response.success) {
       throw new Error(response.message || "Failed to fetch restaurants");
     }
-    return {
-      restaurants: response.data,
-      count: Array.isArray(response.data)
-        ? response.data.length
-        : 0
-    };
+    // Modified to handle direct array response
+    const restaurantsData = Array.isArray(response.data)
+      ? response.data
+      : response.data
+        ?.restaurants || [];
+    return {restaurants: restaurantsData, count: restaurantsData.length};
   } catch (error) {
     return rejectWithValue(error.message);
   }
@@ -74,6 +74,9 @@ const restaurantSlice = createSlice({
       } else {
         state.data.currentRestaurant = action.payload;
       }
+    },
+    clearError: state => {
+      state.error = null;
     }
   },
   extraReducers: builder => {
@@ -133,5 +136,5 @@ export const selectRestaurantsLoading = state => state.restaurants.loading;
 export const selectRestaurantsError = state => state.restaurants.error;
 export const selectRestaurantsStatus = state => state.restaurants.status;
 
-export const {clearRestaurants, setCurrentRestaurant} = restaurantSlice.actions;
+export const {clearRestaurants, setCurrentRestaurant, clearError} = restaurantSlice.actions;
 export default restaurantSlice.reducer;

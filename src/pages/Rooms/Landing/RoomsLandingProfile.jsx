@@ -1,15 +1,17 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import {
-  fetchAllRooms,
+  fetchRoomsPaginated,
   selectRooms,
   selectRoomsLoading,
   selectRoomsError,
   selectRoomsStatus,
-  selectLastFetched,
+  selectHasMore,
   clearError,
+  clearRooms,
+  resetPagination
 } from "../../../stores/Slices/roomSlice";
 import {
   fetchAllServiceNames,
@@ -23,37 +25,107 @@ import {
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import RoomsLandingCard from "../../../components/Landing/Rooms/RoomsLandingCard";
 
+const useInfiniteScroll = ({ loading, hasMore, onLoadMore }) => {
+  const observer = useRef();
+  const lastElementRef = useRef();
+
+  const handleObserver = useCallback(
+    (entries) => {
+      const [target] = entries;
+      if (target.isIntersecting && hasMore && !loading) {
+        onLoadMore();
+      }
+    },
+    [loading, hasMore, onLoadMore]
+  );
+
+  useEffect(() => {
+    const currentObserver = observer.current;
+    const currentElement = lastElementRef.current;
+
+    if (currentObserver) {
+      currentObserver.disconnect();
+    }
+
+    observer.current = new IntersectionObserver(handleObserver, {
+      root: null,
+      rootMargin: "0px",
+      threshold: 1.0,
+    });
+
+    if (currentElement) {
+      observer.current.observe(currentElement);
+    }
+
+    return () => {
+      if (currentObserver) {
+        currentObserver.disconnect();
+      }
+    };
+  }, [handleObserver]);
+
+  return [lastElementRef];
+};
+
 const RoomsLandingProfile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { serviceId } = useParams();
+  const [page, setPage] = useState(1);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Select data from Redux store
   const rooms = useSelector(selectRooms);
   const loading = useSelector(selectRoomsLoading);
   const error = useSelector(selectRoomsError);
   const status = useSelector(selectRoomsStatus);
-  const lastFetched = useSelector(selectLastFetched);
+  const hasMore = useSelector(selectHasMore);
   const allServiceNames = useSelector(selectAllServiceNames);
 
-  // Fetch rooms and service names when component mounts or serviceId changes
+  // Fetch initial data
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        // Always fetch when serviceId changes or component mounts
-        await dispatch(fetchAllRooms({ service: serviceId })).unwrap();
-        await dispatch(fetchAllServiceNames()).unwrap();
+        // Reset rooms when serviceId changes
+        dispatch(resetPagination());
+        setPage(1);
+
+        await Promise.all([
+          dispatch(
+            fetchRoomsPaginated({ service: serviceId, page: 1, limit: 12 })
+          ).unwrap(),
+          dispatch(fetchAllServiceNames()).unwrap(),
+        ]);
+
+        setInitialLoad(false);
       } catch (err) {
-        console.error("Failed to fetch data:", err);
+        console.error("Failed to fetch initial data:", err);
       }
     };
 
-    fetchData();
+    fetchInitialData();
 
     return () => {
       dispatch(clearError());
     };
   }, [serviceId, dispatch]);
+
+  // Fetch more rooms when reaching bottom
+  const loadMore = useCallback(() => {
+    if (!loading && hasMore && !initialLoad) {
+      dispatch(
+        fetchRoomsPaginated({ service: serviceId, page: page + 1, limit: 12 })
+      );
+      setPage((prevPage) => prevPage + 1);
+    }
+  }, [loading, hasMore, page, serviceId, dispatch, initialLoad]);
+
+  // Infinite scroll hook
+  const [infiniteRef] = useInfiniteScroll({
+    loading,
+    hasMore,
+    onLoadMore: loadMore,
+  });
 
   const handleBookNow = (roomId, e) => {
     e.preventDefault();
@@ -66,21 +138,15 @@ const RoomsLandingProfile = () => {
   };
 
   const handleRetry = () => {
-    dispatch(fetchAllRooms({ service: serviceId }));
+    dispatch(resetPagination());
+    setPage(1);
+    dispatch(fetchRoomsPaginated({ service: serviceId, page: 1, limit: 12 }));
   };
 
-  // Filter rooms by serviceId if it exists
-  const filteredRooms = serviceId
-    ? rooms.filter((room) => room.service === serviceId)
-    : rooms;
-
-  // Function to get service name by ID
   const getServiceNameById = (service) => {
     if (!service) return "Service";
 
-    // If service is an object with _id property
     const serviceId = typeof service === "object" ? service._id : service;
-
     const foundService = allServiceNames.find((s) => s._id === serviceId);
 
     return foundService
@@ -90,7 +156,20 @@ const RoomsLandingProfile = () => {
       : "Service";
   };
 
-  if (loading && status === "loading" && !rooms.length) {
+  const getServiceCountry = (service) => {
+    if (!service) return null;
+
+    const serviceId = typeof service === "object" ? service._id : service;
+    const foundService = allServiceNames.find((s) => s._id === serviceId);
+
+    return foundService
+      ? foundService.country
+      : typeof service === "object"
+      ? service.country
+      : null;
+  };
+
+  if (initialLoad && status === "loading") {
     return (
       <div className="flex flex-col justify-center items-center h-screen">
         <LoadingSpinner size="large" />
@@ -112,7 +191,7 @@ const RoomsLandingProfile = () => {
     );
   }
 
-  if (!filteredRooms.length) {
+  if (!rooms.length && !initialLoad) {
     return (
       <div className="max-w-4xl mx-auto p-4 text-center">
         <h2 className="text-2xl font-semibold text-gray-800 mb-4">
@@ -137,7 +216,7 @@ const RoomsLandingProfile = () => {
       <div className="mb-8"></div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredRooms.map((room) => (
+        {rooms.map((room) => (
           <motion.div
             key={room._id}
             whileHover={{ scale: 1.02 }}
@@ -148,11 +227,20 @@ const RoomsLandingProfile = () => {
           >
             <RoomsLandingCard
               room={room}
-              serviceName={getServiceNameById(room.service)} // Pass service name as prop
+              serviceName={getServiceNameById(room.service)}
+              serviceCountry={getServiceCountry(room.service)}
               onBookNow={(e) => handleBookNow(room._id, e)}
             />
           </motion.div>
         ))}
+      </div>
+
+      {/* Infinite scroll trigger */}
+      <div ref={infiniteRef} className="h-10 flex justify-center items-center">
+        {loading && <LoadingSpinner size="medium" />}
+        {!hasMore && rooms.length > 0 && (
+          <p className="text-gray-500">No more rooms to load</p>
+        )}
       </div>
     </motion.div>
   );

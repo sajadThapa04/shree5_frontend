@@ -3,12 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import {
-  fetchRoomById,
-  selectCurrentRoom,
-  selectRoomsLoading,
-  selectRoomsError,
+  fetchRestaurantById,
+  selectCurrentRestaurant,
+  selectRestaurantsLoading,
+  selectRestaurantsError,
   clearError,
-} from "../../../stores/Slices/roomSlice";
+} from "../../../stores/Slices/restaurantSlice";
 import {
   fetchAllServiceNames,
   selectAllServiceNames,
@@ -20,32 +20,31 @@ import {
   LoadingSpinner,
 } from "../../../components/Ui/index";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import RoomProfileCardById from "../../../components/features/RoomsCard/RoomProfileCardById";
-
-const RoomProfileByRoomId = () => {
+import RestaurantProfileCardById from "../../../components/features/RestaurantsCard/RestaurantProfileCardById";
+const RestaurantProfileByRestaurantId = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { roomId } = useParams();
+  const { restaurantId } = useParams();
   const isMounted = useRef(false);
 
   // Select data from Redux store
-  const currentRoom = useSelector(selectCurrentRoom);
-  const loading = useSelector(selectRoomsLoading);
-  const error = useSelector(selectRoomsError);
+  const currentRestaurant = useSelector(selectCurrentRestaurant);
+  const loading = useSelector(selectRestaurantsLoading);
+  const error = useSelector(selectRestaurantsError);
   const allServiceNames = useSelector(selectAllServiceNames);
   const serviceNamesLoading = useSelector(selectServiceNamesLoading);
 
-  // Find the service name for the current room
+  // Find the service name for the current restaurant
   const currentService = allServiceNames.find(
-    (service) => service._id === currentRoom?.service?._id
+    (service) => service._id === currentRestaurant?.service?._id
   );
 
-  // Fetch room and service names when component mounts or roomId changes
+  // Fetch restaurant and service names when component mounts or restaurantId changes
   useEffect(() => {
-    if (isMounted.current && roomId) {
+    if (isMounted.current && restaurantId) {
       const fetchData = async () => {
         try {
-          await dispatch(fetchRoomById(roomId)).unwrap();
+          await dispatch(fetchRestaurantById(restaurantId)).unwrap();
           await dispatch(fetchAllServiceNames()).unwrap();
         } catch (err) {
           console.error("Failed to fetch data:", err);
@@ -58,11 +57,11 @@ const RoomProfileByRoomId = () => {
     return () => {
       dispatch(clearError());
     };
-  }, [roomId, dispatch]);
+  }, [restaurantId, dispatch]);
 
   const handleBack = () => navigate(-1);
-  const handleBookRoom = () => {
-    navigate(`/room/${roomId}/bookings`);
+  const handleReserveTable = () => {
+    navigate(`/restaurant/${restaurantId}/reservations`);
   };
 
   const isLoading = loading || serviceNamesLoading;
@@ -100,28 +99,38 @@ const RoomProfileByRoomId = () => {
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
-      ) : currentRoom ? (
+      ) : currentRestaurant ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
+          <div className="flex justify-between items-center mb-6">
+            <Button
+              onClick={handleBack}
+              variant="ghost"
+              icon={ArrowLeftIcon}
+              iconPosition="left"
+            >
+              Back
+            </Button>
+          </div>
+
           <h1 className="text-3xl font-bold text-gray-900 mb-6">
-            {currentService?.name || "Service Name Not Available"}
+            {currentService?.name || "Restaurant Details"}
           </h1>
-          <RoomProfileCardById
-            room={currentRoom}
-            onBook={handleBookRoom}
-            showFullDetails={true}
+          <RestaurantProfileCardById
+            restaurant={currentRestaurant}
+            onReserve={handleReserveTable}
           />
         </motion.div>
       ) : (
         <div className="text-center py-16 bg-white rounded-xl shadow-sm p-6">
           <p className="text-gray-500 text-lg mb-4">
-            {errorMessage || "Room not found"}
+            {errorMessage || "Restaurant not found"}
           </p>
           <Button variant="primary" onClick={handleBack}>
-            Back to Rooms
+            Back to Restaurants
           </Button>
         </div>
       )}
@@ -129,4 +138,4 @@ const RoomProfileByRoomId = () => {
   );
 };
 
-export default RoomProfileByRoomId;
+export default RestaurantProfileByRestaurantId;
